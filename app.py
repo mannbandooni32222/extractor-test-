@@ -66,3 +66,62 @@ hide_streamlit_style = """
     </style>
 """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
+import streamlit as st
+import requests
+from bs4 import BeautifulSoup
+import re
+import pandas as pd
+
+st.title("Free Email & Social Media Extractor (MVP)")
+
+# Input box
+urls_input = st.text_area("Enter websites (one per line):")
+extract_btn = st.button("Extract Information")
+
+def extract_info(url):
+    try:
+        if not url.startswith("http"):
+            url = "https://" + url
+        html = requests.get(url, timeout=10).text
+        soup = BeautifulSoup(html, "html.parser")
+
+        # Email extraction
+        emails = list(set(re.findall(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+", html)))
+        email = emails[0] if emails else "Not found"
+
+        # Instagram
+        insta = soup.find("a", href=re.compile("instagram.com"))
+        insta_link = insta["href"] if insta else "Not found"
+
+        # Facebook
+        fb = soup.find("a", href=re.compile("facebook.com"))
+        fb_link = fb["href"] if fb else "Not found"
+
+        return email, insta_link, fb_link
+
+    except:
+        return "Error", "Error", "Error"
+
+if extract_btn:
+    urls = urls_input.split("\n")
+    results = []
+
+    for url in urls:
+        email, ig, fb = extract_info(url)
+        results.append({
+            "Website": url.strip(),
+            "Email": email,
+            "Instagram": ig,
+            "Facebook": fb
+        })
+
+    # Display results in table
+    df = pd.DataFrame(results)
+    st.subheader("Extracted Results")
+    st.dataframe(df, use_container_width=True)
+
+    # Allow download as CSV
+    csv = df.to_csv(index=False)
+    st.download_button("Download as CSV", csv, "results.csv", "text/csv")
+
