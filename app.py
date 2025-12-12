@@ -38,25 +38,35 @@ def extract_info(url):
 
 if extract_btn:
     urls = urls_input.split("\n")
+    urls = [u.strip() for u in urls if u.strip()]  # clean empty lines
+
+    # LIMIT extraction to only 5 URLs
+    limited_urls = urls[:5]
+
     results = []
 
-    for url in urls:
+    for url in limited_urls:
         email, ig, fb = extract_info(url)
         results.append({
-            "Website": url.strip(),
+            "Website": url,
             "Email": email,
             "Instagram": ig,
             "Facebook": fb
         })
 
+    # Display message if user entered more than 5 URLs
+    if len(urls) > 5:
+        st.warning("Free version limit reached: Only 5 websites were extracted.")
+
     # Display results in table
     df = pd.DataFrame(results)
-    st.subheader("Extracted Results")
+    st.subheader("Extracted Results (Max 5)")
     st.dataframe(df, use_container_width=True)
 
-    # Allow download as CSV
+    # Download as CSV
     csv = df.to_csv(index=False)
     st.download_button("Download as CSV", csv, "results.csv", "text/csv")
+
 
 
 
