@@ -152,3 +152,19 @@ if extract_btn:
 
     csv = df.to_csv(index=False)
     st.download_button("Download CSV (5 rows max)", csv, "results.csv", "text/csv")
+
+
+
+
+import streamlit as st
+
+# Hide Streamlit top-right menu + footer
+hide_streamlit_style = """
+    <style>
+    #MainMenu {visibility: hidden;}     /* Hides hamburger menu */
+    header {visibility: hidden;}        /* Hides top header */
+    footer {visibility: hidden;}        /* Hides footer */
+    .stDeployButton {display: none;}    /* Hides deploy button */
+    </style>
+"""
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
