@@ -50,3 +50,19 @@ if st.button("Extract"):
                 st.write("Emails:", data["Emails"])
                 st.write("Facebook:", data["Facebook"])
                 st.write("Instagram:", data["Instagram"])
+
+
+
+
+import streamlit as st
+
+# Hide Streamlit top-right menu + footer
+hide_streamlit_style = """
+    <style>
+    #MainMenu {visibility: hidden;}     /* Hides hamburger menu */
+    header {visibility: hidden;}        /* Hides top header */
+    footer {visibility: hidden;}        /* Hides footer */
+    .stDeployButton {display: none;}    /* Hides deploy button */
+    </style>
+"""
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
