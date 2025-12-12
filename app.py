@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 import re
 import pandas as pd
 
-st.title("Free Email & Social Media Extractor (MVP Version)")
+st.title("Email & Social Media Extractor (MVP Version)")
 
 # Input
 urls_input = st.text_area("Enter websites (one per line):")
