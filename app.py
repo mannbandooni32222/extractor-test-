@@ -138,7 +138,7 @@ def extract_info(url):
 
 if extract_btn:
     urls = [u.strip() for u in urls_input.split("\n") if u.strip()]
-    urls = urls[:5]  # FREE LIMIT
+    urls = urls[:10]  # FREE LIMIT
 
     results = []
 
@@ -151,8 +151,8 @@ if extract_btn:
             "Facebook": fb
         })
 
-    if len(urls_input.split("\n")) > 5:
-        st.warning("Free plan allows only 5 websites.")
+    if len(urls_input.split("\n")) > 10:
+        st.warning("Free plan allows only 10 websites.")
 
     df = pd.DataFrame(results)
     st.dataframe(df, use_container_width=True)
