@@ -12,7 +12,7 @@ from pathlib import Path
 # ------------------------------
 
 USER_DB = Path("users.json")
-ADMIN_EMAILS = ["bandoonimann@gmail.com"]  # 🔴 CHANGE THIS
+ADMIN_EMAILS = ["mmbandooni@gmail.com"]  # 🔴 CHANGE THIS
 
 # ------------------------------
 # HELPERS
