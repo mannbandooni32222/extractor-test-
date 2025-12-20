@@ -3,232 +3,140 @@ import requests
 from bs4 import BeautifulSoup
 import re
 import pandas as pd
-import json
-import hashlib
-from pathlib import Path
 
-# ------------------------------
-# CONFIG
-# ------------------------------
+# ----------------------------
+# PAGE CONFIG
+# ----------------------------
+st.set_page_config(
+    page_title="Website Scraper",
+    layout="wide"
+)
 
-USER_DB = Path("users.json")
-ADMIN_EMAILS = ["mmbandooni@gmail.com"]  # 🔴 CHANGE THIS
+st.title("🌐 Website Email & Social Media Scraper")
+st.write("Extract emails and social links from public websites.")
 
-# ------------------------------
-# HELPERS
-# ------------------------------
+# ----------------------------
+# PLAN SELECTION (MVP LOGIC)
+# ----------------------------
+st.sidebar.title("💼 Your Plan")
 
-def load_users():
-    if USER_DB.exists():
-        with open(USER_DB, "r") as f:
-            return json.load(f)
-    return {"users": []}
+plan = st.sidebar.radio(
+    "Choose plan",
+    ["Free", "Paid ($5/month)"]
+)
 
-def save_users(data):
-    with open(USER_DB, "w") as f:
-        json.dump(data, f, indent=4)
+FREE_LIMIT = 10
 
-def hash_password(password):
-    return hashlib.sha256(password.encode()).hexdigest()
+if plan == "Free":
+    st.sidebar.info("Free plan: 10 websites per run")
+else:
+    st.sidebar.success("Paid plan: Unlimited scraping")
 
-def authenticate(email, password):
-    users = load_users()["users"]
-    hashed = hash_password(password)
+# ----------------------------
+# INPUT
+# ----------------------------
+urls_input = st.text_area(
+    "Enter website URLs (one per line)",
+    height=200,
+    placeholder="example.com\nhttps://example.org"
+)
 
-    for u in users:
-        if u["email"] == email and u["password"] == hashed:
-            return u
-    return None
+extract_btn = st.button("🚀 Start Scraping")
 
-def register(email, password):
-    data = load_users()
+# ----------------------------
+# SCRAPER FUNCTION
+# ----------------------------
+def scrape_website(url):
+    try:
+        if not url.startswith("http"):
+            url = "https://" + url
 
-    for u in data["users"]:
-        if u["email"] == email:
-            return False
+        headers = {"User-Agent": "Mozilla/5.0"}
+        response = requests.get(url, timeout=10, headers=headers)
+        html = response.text
 
-    role = "admin" if email in ADMIN_EMAILS else "user"
+        soup = BeautifulSoup(html, "html.parser")
 
-    data["users"].append({
-        "email": email,
-        "password": hash_password(password),
-        "plan": "free",
-        "role": role
-    })
+        # 1 Email only
+        emails = re.findall(
+            r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}",
+            html
+        )
+        email = emails[0] if emails else "Not found"
 
-    save_users(data)
-    return True
+        # Social links
+        insta = soup.find("a", href=re.compile("instagram.com"))
+        fb = soup.find("a", href=re.compile("facebook.com"))
+        linkedin = soup.find("a", href=re.compile("linkedin.com"))
 
-# ------------------------------
-# SESSION INIT
-# ------------------------------
+        return {
+            "Website": url,
+            "Email": email,
+            "Instagram": insta["href"] if insta else "Not found",
+            "Facebook": fb["href"] if fb else "Not found",
+            "LinkedIn": linkedin["href"] if linkedin else "Not found"
+        }
 
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
+    except:
+        return {
+            "Website": url,
+            "Email": "Error",
+            "Instagram": "Error",
+            "Facebook": "Error",
+            "LinkedIn": "Error"
+        }
 
-# ------------------------------
-# LOGIN / SIGNUP
-# ------------------------------
+# ----------------------------
+# RUN SCRAPER
+# ----------------------------
+if extract_btn:
+    urls = [u.strip() for u in urls_input.split("\n") if u.strip()]
 
-if not st.session_state.logged_in:
-    st.title("🔐 Login / Signup")
+    if not urls:
+        st.error("Please enter at least one website.")
+        st.stop()
 
-    choice = st.radio("Choose option", ["Login", "Signup"])
+    # FREE PLAN LIMIT
+    if plan == "Free" and len(urls) > FREE_LIMIT:
+        st.warning(f"Free plan allows only {FREE_LIMIT} websites.")
+        urls = urls[:FREE_LIMIT]
 
-    if choice == "Login":
-        email = st.text_input("Email")
-        password = st.text_input("Password", type="password")
+    results = []
 
-        if st.button("Login"):
-            user = authenticate(email, password)
-            if user:
-                st.session_state.logged_in = True
-                st.session_state.user_email = user["email"]
-                st.session_state.user_role = user["role"]
-                st.session_state.user_plan = user["plan"]
-                st.rerun()
-            else:
-                st.error("Invalid email or password")
+    with st.spinner("Scraping websites..."):
+        for url in urls:
+            results.append(scrape_website(url))
 
+    df = pd.DataFrame(results)
+
+    st.success(f"Scraped {len(df)} websites")
+    st.dataframe(df, use_container_width=True, height=600)
+
+    # CSV DOWNLOAD LIMIT
+    if plan == "Free":
+        df_download = df.head(FREE_LIMIT)
+        st.info("Free plan CSV limited to 10 rows.")
     else:
-        email = st.text_input("Create Email")
-        password = st.text_input("Create Password", type="password")
+        df_download = df
 
-        if st.button("Create Account"):
-            if register(email, password):
-                st.success("Account created. Please login.")
-            else:
-                st.error("Email already exists")
-
-    st.stop()
-
-# ------------------------------
-# LOGOUT
-# ------------------------------
-
-st.sidebar.success(f"Logged in as {st.session_state.user_email}")
-
-if st.sidebar.button("Logout"):
-    st.session_state.clear()
-    st.rerun()
-
-# ------------------------------
-# ADMIN DASHBOARD
-# ------------------------------
-
-def admin_dashboard():
-    st.title("🛠 Admin Dashboard")
-
-    data = load_users()
-    users = data["users"]
-
-    if not users:
-        st.info("No users found")
-        return
-
-    df = pd.DataFrame(users)
-
-    plan_filter = st.selectbox(
-        "Filter by plan",
-        ["All"] + sorted(df["plan"].unique())
-    )
-
-    if plan_filter != "All":
-        df = df[df["plan"] == plan_filter]
-
-    st.markdown("### 👥 Users")
-
-    st.dataframe(
-        df,
-        use_container_width=True,
-        height=600
-    )
-
-    csv = df.to_csv(index=False)
+    csv = df_download.to_csv(index=False)
     st.download_button(
-        "Download Users CSV",
+        "⬇ Download CSV",
         csv,
-        "users.csv",
+        "scraped_results.csv",
         "text/csv"
     )
 
-# ------------------------------
-# EXTRACTOR
-# ------------------------------
-
-def extractor():
-    st.title("Free Email & Social Media Extractor")
-
-    urls_input = st.text_area("Enter websites (one per line)")
-    extract_btn = st.button("Extract")
-
-    def extract_info(url):
-        try:
-            if not url.startswith("http"):
-                url = "https://" + url
-
-            html = requests.get(url, timeout=10).text
-            soup = BeautifulSoup(html, "html.parser")
-
-            emails = re.findall(
-                r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+",
-                html
-            )
-            email = emails[0] if emails else "Not found"
-
-            insta = soup.find("a", href=re.compile("instagram.com"))
-            fb = soup.find("a", href=re.compile("facebook.com"))
-
-            return (
-                email,
-                insta["href"] if insta else "Not found",
-                fb["href"] if fb else "Not found"
-            )
-        except:
-            return "Error", "Error", "Error"
-
-    if extract_btn:
-        urls = [u.strip() for u in urls_input.split("\n") if u.strip()]
-        urls = urls[:10]  # FREE LIMIT
-
-        results = []
-
-        for url in urls:
-            email, ig, fb = extract_info(url)
-            results.append({
-                "Website": url,
-                "Email (1 only)": email,
-                "Instagram": ig,
-                "Facebook": fb
-            })
-
-        if len(urls_input.split("\n")) > 10:
-            st.warning("Free plan allows only 10 websites.")
-
-        df = pd.DataFrame(results)
-        st.dataframe(df, use_container_width=True)
-
-        csv = df.to_csv(index=False)
-        st.download_button(
-            "Download CSV (10 rows)",
-            csv,
-            "results.csv",
-            "text/csv"
+    # UPGRADE CTA
+    if plan == "Free":
+        st.markdown(
+            "💡 **Upgrade to Paid ($5/month) for unlimited scraping**",
+            unsafe_allow_html=True
         )
 
-# ------------------------------
-# ROUTING
-# ------------------------------
-
-if st.session_state.user_role == "admin":
-    admin_dashboard()
-else:
-    extractor()
-
-# ------------------------------
+# ----------------------------
 # HIDE STREAMLIT UI
-# ------------------------------
-
+# ----------------------------
 st.markdown("""
 <style>
 #MainMenu {visibility: hidden;}
