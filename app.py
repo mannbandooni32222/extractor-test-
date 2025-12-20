@@ -1,3 +1,59 @@
+import firebase_admin
+from firebase_admin import credentials, auth, firestore
+import streamlit as st
+
+if not firebase_admin._apps:
+    cred = credentials.Certificate({
+        "type": "service_account",
+        "project_id": st.secrets["FIREBASE_PROJECT_ID"],
+        "client_email": st.secrets["FIREBASE_CLIENT_EMAIL"],
+        "private_key": st.secrets["FIREBASE_PRIVATE_KEY"].replace("\\n", "\n"),
+        "token_uri": "https://oauth2.googleapis.com/token"
+    })
+    firebase_admin.initialize_app(cred)
+
+db = firestore.client()
+
+def signup_user(email, password):
+    try:
+        user = auth.create_user(
+            email=email,
+            password=password
+        )
+
+        # Create Firestore user document
+        db.collection("users").document(user.uid).set({
+            "email": email,
+            "plan": "free",
+            "role": "user",
+            "usage_count": 0,
+            "created_at": firestore.SERVER_TIMESTAMP,
+            "paid_at": None
+        })
+
+        return True
+    except Exception as e:
+        st.error(str(e))
+        return False
+def get_user_by_email(email):
+    users = db.collection("users").where("email", "==", email).limit(1).stream()
+    for u in users:
+        return u.id, u.to_dict()
+    return None, None
+
+uid, user_data = get_user_by_email(email)
+
+st.session_state.uid = uid
+st.session_state.plan = user_data["plan"]
+st.session_state.usage = user_data["usage_count"]
+
+def increase_usage(uid, count):
+    user_ref = db.collection("users").document(uid)
+    user_ref.update({
+        "usage_count": firestore.Increment(count)
+    })
+
+
 import streamlit as st
 import requests
 from bs4 import BeautifulSoup
