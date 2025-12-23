@@ -1,44 +1,43 @@
-
-from fastapi import FastAPI, HTTPException
+# main.py
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from scraper import scrape_site  # your scraper logic
 from typing import List
-from scraper import scrape_website
 
-app = FastAPI(
-    title="Website Email & Social Scraper API",
-    description="Extract email and social media links from websites",
-    version="1.0.0"
+app = FastAPI(title="Website Scraper API")
+
+# -------------------------------
+# CORS setup
+# -------------------------------
+origins = [
+    "*"  # For testing, allows all domains. Replace with your domain in production e.g. "https://granthkosa.com"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,  
+    allow_credentials=True,
+    allow_methods=["*"],     
+    allow_headers=["*"],     
 )
 
-# -----------------------------
-# REQUEST MODEL
-# -----------------------------
+# -------------------------------
+# Request/Response models
+# -------------------------------
 class ScrapeRequest(BaseModel):
-    websites: List[str]
+    urls: List[str]
 
-# -----------------------------
-# RESPONSE MODEL
-# -----------------------------
-class ScrapeResponse(BaseModel):
-    results: List[dict]
-
-# -----------------------------
-# HEALTH CHECK
-# -----------------------------
+# -------------------------------
+# Routes
+# -------------------------------
 @app.get("/")
-def home():
+def root():
     return {"status": "API is running"}
 
-# -----------------------------
-# SCRAPE ENDPOINT
-# -----------------------------
-@app.post("/scrape", response_model=ScrapeResponse)
-def scrape_sites(data: ScrapeRequest):
-    if not data.websites:
-        raise HTTPException(status_code=400, detail="No websites provided")
-
+@app.post("/scrape")
+def scrape_endpoint(request: ScrapeRequest):
     results = []
-    for site in data.websites:
-        results.append(scrape_website(site))
-
+    for url in request.urls:
+        results.append(scrape_site(url))
     return {"results": results}
