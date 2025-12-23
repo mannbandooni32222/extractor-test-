@@ -5,65 +5,23 @@ import re
 import pandas as pd
 
 # --------------------------------------------------
-# CONFIG
+# PAGE CONFIG
 # --------------------------------------------------
-st.set_page_config(
-    page_title="Website Email & Social Scraper",
-    layout="wide"
-)
-
-# 🔧 MANUAL PLAN CONTROL (ADMIN)
-# Change this to True to unlock paid features
-PAID_USER = False   # <-- ADMIN TOGGLE
-FREE_LIMIT = 10
+st.set_page_config(layout="wide")
 
 # --------------------------------------------------
-# CUSTOM CSS (BRAND UI)
+# CUSTOM MINIMAL CSS (BRAND COLORS)
 # --------------------------------------------------
 st.markdown("""
 <style>
-/* Global */
 html, body, [class*="css"] {
     font-family: Inter, system-ui, sans-serif;
     background-color: #ffffff;
 }
 
-/* Center container */
 .block-container {
     max-width: 1100px;
-    padding-top: 3rem;
-}
-
-/* Header */
-.app-title {
-    font-size: 36px;
-    font-weight: 600;
-    color: #111;
-}
-
-.app-subtitle {
-    font-size: 16px;
-    color: #555;
-    margin-bottom: 1.5rem;
-}
-
-/* Plan badge */
-.plan-badge {
-    display: inline-block;
-    padding: 6px 14px;
-    border-radius: 999px;
-    font-size: 14px;
-    margin-bottom: 2rem;
-}
-
-.plan-free {
-    background-color: rgba(76,0,177,0.08);
-    color: #4c00b1;
-}
-
-.plan-paid {
-    background-color: #4c00b1;
-    color: #ffffff;
+    padding-top: 2rem;
 }
 
 /* Textarea */
@@ -86,7 +44,7 @@ textarea {
     background-color: #3b008f;
 }
 
-/* Dataframe */
+/* Table */
 [data-testid="stDataFrame"] {
     border-radius: 12px;
     border: 1px solid #eee;
@@ -113,18 +71,6 @@ textarea {
 """, unsafe_allow_html=True)
 
 # --------------------------------------------------
-# HEADER
-# --------------------------------------------------
-st.markdown('<div class="app-title">Website Email & Social Scraper</div>', unsafe_allow_html=True)
-st.markdown('<div class="app-subtitle">Extract emails and social links from public websites</div>', unsafe_allow_html=True)
-
-# Plan Badge
-if PAID_USER:
-    st.markdown('<div class="plan-badge plan-paid">✅ Paid Plan – Unlimited scraping</div>', unsafe_allow_html=True)
-else:
-    st.markdown('<div class="plan-badge plan-free">🆓 Free Plan – 10 websites</div>', unsafe_allow_html=True)
-
-# --------------------------------------------------
 # INPUT
 # --------------------------------------------------
 urls_input = st.text_area(
@@ -148,7 +94,7 @@ def scrape_site(url):
         html = res.text
         soup = BeautifulSoup(html, "html.parser")
 
-        # Email (1 only)
+        # Email (first found)
         emails = re.findall(
             r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}",
             html
@@ -164,7 +110,7 @@ def scrape_site(url):
             "Email": email,
             "Instagram": social("instagram.com"),
             "Facebook": social("facebook.com"),
-            "LinkedIn": social("linkedin.com")
+            "LinkedIn": social("linkedin.com"),
         }
 
     except:
@@ -173,7 +119,7 @@ def scrape_site(url):
             "Email": "Error",
             "Instagram": "Error",
             "Facebook": "Error",
-            "LinkedIn": "Error"
+            "LinkedIn": "Error",
         }
 
 # --------------------------------------------------
@@ -183,21 +129,16 @@ if start:
     urls = [u.strip() for u in urls_input.split("\n") if u.strip()]
 
     if not urls:
-        st.error("Please enter at least one website.")
         st.stop()
-
-    if not PAID_USER:
-        urls = urls[:FREE_LIMIT]
 
     results = []
 
-    with st.spinner("Scraping websites..."):
+    with st.spinner("Scraping..."):
         for url in urls:
             results.append(scrape_site(url))
 
     df = pd.DataFrame(results)
 
-    st.success(f"Scraped {len(df)} websites")
     st.dataframe(df, use_container_width=True, height=520)
 
     csv = df.to_csv(index=False)
@@ -207,6 +148,3 @@ if start:
         "scraped_results.csv",
         "text/csv"
     )
-
-    if not PAID_USER and len(urls_input.split("\n")) > FREE_LIMIT:
-        st.warning("Free plan limit reached. Upgrade to unlock unlimited scraping.")
