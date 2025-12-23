@@ -16,10 +16,10 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,  
+    allow_origins=["https://granthkosa.com"],  # replace with your WordPress URL
     allow_credentials=True,
-    allow_methods=["*"],     
-    allow_headers=["*"],     
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # -------------------------------
