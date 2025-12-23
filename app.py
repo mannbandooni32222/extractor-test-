@@ -12,7 +12,7 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("🌐 Website Email & Social Media Scraper")
+st.title("Website Email & Social Media Scraper")
 st.write("Extract emails and social links from public websites.")
 
 # -----------------------------
