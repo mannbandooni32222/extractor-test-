@@ -1,4 +1,3 @@
-# main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -7,35 +6,30 @@ from typing import List
 
 app = FastAPI(title="Website Scraper API")
 
-# -------------------------------
-# CORS setup (allow WordPress site)
-# -------------------------------
+# ✅ Add your WordPress domain here
 origins = [
-    "https://your-wordpress-site.com"  # Replace with your WordPress domain
+    "https://granthkosa.com",
+    "http://localhost:3000",  # optional for local testing
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=origins,  # only allow your WordPress site
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# -------------------------------
-# Request model
-# -------------------------------
 class ScrapeRequest(BaseModel):
     urls: List[str]
 
-# -------------------------------
-# Routes
-# -------------------------------
 @app.get("/")
 def root():
     return {"status": "API is running"}
 
 @app.post("/scrape")
 def scrape_endpoint(request: ScrapeRequest):
-    results = [scrape_site(url) for url in request.urls]
+    results = []
+    for url in request.urls:
+        results.append(scrape_site(url))
     return {"results": results}
