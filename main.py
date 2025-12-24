@@ -6,32 +6,24 @@ from scraper import scrape_site
 
 app = FastAPI()
 
-# -------------------------------
-# CORS FIX (THIS IS IMPORTANT)
-# -------------------------------
+# ✅ VERY IMPORTANT: CORS FIX
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # your WordPress site
+    allow_origins=["*"],  # allow all websites (safe for now)
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# -------------------------------
-# Request model
-# -------------------------------
 class ScrapeRequest(BaseModel):
     urls: List[str]
 
-# -------------------------------
-# Routes
-# -------------------------------
 @app.get("/")
 def root():
     return {"status": "API is running"}
 
 @app.post("/scrape")
-def scrape_endpoint(request: ScrapeRequest):
+def scrape(request: ScrapeRequest):
     results = []
     for url in request.urls:
         results.append(scrape_site(url))
