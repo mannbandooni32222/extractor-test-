@@ -29,7 +29,19 @@ def root():
 
 @app.post("/scrape")
 def scrape_endpoint(request: ScrapeRequest):
+    urls = request.urls
+    plan = request.plan  # "free" or "paid"
+
+    # Enforce limits
+    if plan == "free":
+        urls = urls[:10]  # limit free users
+
     results = []
-    for url in request.urls:
+    for url in urls:
         results.append(scrape_site(url))
-    return {"results": results}
+
+    return {
+        "plan": plan,
+        "scraped": len(results),
+        "results": results
+    }
