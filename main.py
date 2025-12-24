@@ -14,7 +14,10 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,  # only allow your WordPress site
+    allow_origins=[
+        "https://granthkosa.com",
+        "https://www.granthkosa.com"
+    ],  # only allow your WordPress site
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
