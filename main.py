@@ -4,14 +4,14 @@ from pydantic import BaseModel
 from typing import List
 from scraper import scrape_site
 
-app = FastAPI(title="Website Scraper API")
+app = FastAPI()
 
 # -------------------------------
 # CORS FIX (THIS IS IMPORTANT)
 # -------------------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://granthkosa.com"],  # your WordPress site
+    allow_origins=["*"],  # your WordPress site
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
