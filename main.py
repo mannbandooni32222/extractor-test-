@@ -8,8 +8,7 @@ app = FastAPI(title="Website Scraper API")
 
 # ✅ Add your WordPress domain here
 origins = [
-    "https://granthkosa.com",
-    "http://localhost:3000",  # optional for local testing
+    "*"  # optional for local testing
 ]
 
 app.add_middleware(
