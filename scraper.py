@@ -3,7 +3,7 @@ import requests
 from bs4 import BeautifulSoup
 import re
 
-def scrape_site(url: str):
+def scrape_site(url):
     try:
         if not url.startswith("http"):
             url = "https://" + url
